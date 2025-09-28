@@ -1,4 +1,4 @@
-# Prototype: Attractor Reconstruction of a Dark-Matter Field
+# Prototype: Attractor Reconstruction of a Dark Matter Field
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17216752.svg)](https://doi.org/10.5281/zenodo.17216752)
 
