@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{fullpage}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, urlcolor=blue}
+
+\title{Prototype: Attractor Reconstruction of a Dark-Matter Field}
+\author{Laura Lopez}
+\date{September 27, 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We propose a fixed-point (attractor) reconstruction of the projected dark-matter field $\psi(x)$
+from combined gravitational lensing and stellar-stream data. The method alternates short gravitational
+relaxation steps under the Vlasov--Poisson equations with observational pull-backs, producing a candidate
+attractor $\psi^\ast$ whose stability and uniqueness can be directly tested.\footnote{This work was inspired
+by Geoffrey Hinton’s public remarks that AI may be especially suited to connecting seemingly unrelated concepts:
+\emph{Geoffrey Hinton reveals the surprising truth about AI’s limits and potential}, YouTube (2024).
+Link: \url{https://youtu.be/n4IQOBka8bc}}%
+
+\par
+If a candidate prior (cold, warm/fuzzy, or nonlocal) both fits the data and successfully cross-predicts
+independent observations, it provides a concrete discriminator among dark-matter models.
+The framework is offered not as a claim of discovery, but as a testable hypothesis designed to guide
+further analysis and simulation.
+\end{abstract}
+
+\section{Objective}
+Reconstruct the projected dark matter field $\psi(x)$ as a fixed point of an operator $F$ that alternates between:
+(i) gravitational relaxation under Vlasov--Poisson, and (ii) pullbacks from data (lensing + stellar streams).
+Converged solutions are attractors; stability and uniqueness are testable.
+
+\section{Mathematical Formulation}
+We define an energy functional:
+\begin{equation}
+E[\psi] = \tfrac{1}{2}\langle \delta, K^{-1}\delta \rangle
+        + \chi^2_{\text{lens}}[\psi]
+        + \chi^2_{\text{stream}}[\psi]
+        + \lambda \|\nabla \psi\|^2,
+\end{equation}
+with $\delta = e^\psi - 1$.
+This is equivalent to adopting the common transformation $\psi = \log(1+\delta)$, which guarantees $\delta > -1$
+and is widely used in cosmology to Gaussianize the density field, handling both overdense and underdense regions.
+
+The kernel $K$ encodes dark-matter microphysics:
+parameterized families spanning CDM (baseline), WDM/fuzzy (cutoff), or DIN/plasma-like non-local kernels.
+Attractor condition: $\psi^\ast = F(\psi^\ast)$.
+Stability: spectral radius $\rho(J)<1$ of the Jacobian $J$ at $\psi^\ast$.
+
+\section{Assumptions}
+We hypothesize that the operator $F$ admits stable fixed points, motivated by analogies to attractor dynamics
+in Hopfield networks and the relaxation properties of collisionless N-body systems.
+Convergence of $F$ is not guaranteed for arbitrary priors or data; safeguards include adaptive step sizes,
+multiple initialization strategies, and explicit convergence diagnostics beyond relative change.
+
+The solution may not be unique given the inverse problem’s ill-posed nature; characterizing the solution manifold,
+quantifying Bayesian uncertainty, and exploring multiple attractors are important follow-ups.
+
+\section{Inputs}
+\begin{itemize}
+\item Weak/strong lensing $\kappa$-maps of well-studied fields (e.g. HST Frontier Fields).
+\item One stellar stream line-density profile from Gaia DR3 (e.g. GD-1, Pal 5).
+\item Optional: rotation curves or velocity dispersions.
+\end{itemize}
+Relative weights $w_L$ and $w_S$ between lensing and streams can be adaptively tuned to reflect observational
+depth and signal-to-noise.
+
+\section{Operator \texorpdfstring{$F$}{F}}
+Each iteration consists of:
+\begin{enumerate}
+\item \textbf{Gravity step:} compute $\delta = e^\psi - 1$, solve $\nabla^2 \phi = 4\pi G \bar{\rho}\, \delta$.
+\item \textbf{Data pullback:} forward lensing projection $\kappa(\psi)$; integrate stellar orbits in $\phi$;
+   update misfit gradients.
+\item \textbf{Prior/proximal step:}
+\[
+\psi \leftarrow \arg\min \left\{ \tfrac{1}{2}\langle \delta, K^{-1}\delta\rangle
++ \lambda \|\nabla\psi\|^2 + \tfrac{\alpha}{2}\|\psi - \tilde{\psi}\|^2 \right\}.
+\]
+\end{enumerate}
+Repeat until convergence.
+
+\section{Implementation Sketch (pseudocode)}
+\begin{verbatim}
+for t in range(T):
+    delta = np.exp(psi) - 1
+    phi = poisson_solve(delta)
+    grad_lens   = lensing_adjoint(lensing_project(psi) - kappa_obs)
+    grad_stream = stream_adjoint(stream_line_density(phi), stream_obs_power)
+    grad_data = wL*grad_lens + wS*grad_stream
+    psi_tilde = psi - eta*grad_data
+    psi = proximal_fourier(psi_tilde, K, alpha, lambda_reg)
+    if rel_change(psi, prev) < eps: break
+\end{verbatim}
+
+\section{Nonlocal Priors}
+Candidate priors may include Gaussian kernels, Yukawa-type falloffs, or convolutional operators
+derived from N-body simulations. Rather than discrete kernel choices, parameterized families can be tested,
+spanning CDM, WDM/fuzzy, and plasma-like nonlocality.
+Validation relies on cross-prediction: fit lensing and predict streams, or the reverse.
+Priors that succeed in both channels provide evidence for the correct microphysics.
+
+\section{Toy Example}
+A minimal synthetic test can illustrate feasibility. For instance,
+generate a Gaussian clump $\psi(x)$, apply one iteration of $F$
+(gravity step + lensing misfit), and verify convergence toward a stable solution.
+A 2D toy model, matching the dimensionality of lensing and stream observables, provides the natural proof-of-concept to demonstrate the operator’s behavior and test stability and uniqueness.
+
+\section{Computational Cost}
+Full convergence on high-resolution cosmological fields may be expensive.
+Reduced-dimension toy models (1D streams, 2D lensing patches)
+allow validation before scaling. FFT Poisson solvers, sparse representations,
+and GPU acceleration mitigate costs.
+
+\section{Outputs}
+\begin{itemize}
+\item Convergence history.
+\item Stability: spectral radius $\rho(J)$ at $\psi^\ast$, and optionally Lyapunov exponents.
+\item Basin robustness: convergence from random seeds.
+\item Cross-prediction between lensing and streams.
+\end{itemize}
+
+\section{Why It Matters}
+Even null results are informative: convergence under CDM alone is nontrivial.
+If a non-local prior improves joint fit and stability, that suggests hidden-layer physics.
+If both datasets fit individually but only one cross-predicts, the method
+discriminates among dark-matter models.
+Given possible non-uniqueness, families of attractors may exist; characterizing these
+and quantifying uncertainty represent essential next steps.
+
+\section*{Credit \& Rights}
+Concept Note: This hypothesis framework was authored by Laura Lopez, September 2025.\\
+Licensed under Creative Commons Attribution (CC-BY 4.0).\\
+\url{https://creativecommons.org/licenses/by/4.0/}
+
+\end{document}
